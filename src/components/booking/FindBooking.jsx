@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import moment from "moment"
-import { cancelBooking, getBookingByConfirmationCode } from "../utils/ApiFunctions"
+// import { cancelBooking, getBookingByConfirmationCode } from "../utils/ApiFunctions"
+import { getAllBookings, deleteBooking } from "../../services/BookingService"
 
 const FindBooking = () => {
 	const [confirmationCode, setConfirmationCode] = useState("")
@@ -40,6 +41,14 @@ const FindBooking = () => {
 		setConfirmationCode(event.target.value)
 	}
 
+	// Mock getBookingByConfirmationCode
+	const getBookingByConfirmationCode = async (code) => {
+		const all = await getAllBookings();
+		const found = all.find(b => String(b.id) === code || b.bookingConfirmationCode === code);
+		if (!found) throw new Error("Không tìm thấy booking!");
+		return found;
+	}
+
 	const handleFormSubmit = async (event) => {
 		event.preventDefault()
 		setIsLoading(true)
@@ -50,11 +59,7 @@ const FindBooking = () => {
 			setError(null)
 		} catch (error) {
 			setBookingInfo(emptyBookingInfo)
-			if (error.response && error.response.status === 404) {
-				setError(error.response.data.message)
-			} else {
-				setError(error.message)
-			}
+			setError(error.message)
 		}
 
 		setTimeout(() => setIsLoading(false), 2000)
@@ -62,7 +67,7 @@ const FindBooking = () => {
 
 	const handleBookingCancellation = async (bookingId) => {
 		try {
-			await cancelBooking(bookingInfo.id)
+			await deleteBooking(bookingInfo.id)
 			setIsDeleted(true)
 			setSuccessMessage("Booking has been cancelled successfully!")
 			setBookingInfo(emptyBookingInfo)
@@ -103,26 +108,14 @@ const FindBooking = () => {
 					<div>Finding your booking...</div>
 				) : error ? (
 					<div className="text-danger">Error: {error}</div>
-				) : bookingInfo.bookingConfirmationCode ? (
+				) : bookingInfo.id ? (
 					<div className="col-md-6 mt-4 mb-5">
 						<h3>Booking Information</h3>
-						<p className="text-success">Confirmation Code: {bookingInfo.bookingConfirmationCode}</p>
-						<p>Room Number: {bookingInfo.room.id}</p>
-						<p>Room Type: {bookingInfo.room.roomType}</p>
-						<p>
-							Check-in Date:{" "}
-							{moment(bookingInfo.checkInDate).subtract(1, "month").format("MMM Do, YYYY")}
-						</p>
-						<p>
-							Check-out Date:{" "}
-							{moment(bookingInfo.checkInDate).subtract(1, "month").format("MMM Do, YYYY")}
-						</p>
-						<p>Full Name: {bookingInfo.guestName}</p>
-						<p>Email Address: {bookingInfo.guestEmail}</p>
-						<p>Adults: {bookingInfo.numOfAdults}</p>
-						<p>Children: {bookingInfo.numOfChildren}</p>
-						<p>Total Guest: {bookingInfo.totalNumOfGuests}</p>
-
+						<p className="text-success">Booking ID: {bookingInfo.id}</p>
+						<p>Room ID: {bookingInfo.roomId || bookingInfo.room?.id}</p>
+						<p>Check-in Date: {bookingInfo.checkInDate}</p>
+						<p>Check-out Date: {bookingInfo.checkOutDate}</p>
+						<p>Status: {bookingInfo.status}</p>
 						{!isDeleted && (
 							<button
 								onClick={() => handleBookingCancellation(bookingInfo.id)}

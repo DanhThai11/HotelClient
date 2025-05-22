@@ -3,7 +3,7 @@ import moment from "moment"
 import { useState } from "react"
 import { Form, FormControl, Button } from "react-bootstrap"
 import BookingSummary from "./BookingSummary"
-import { bookRoom, getRoomById } from "../utils/ApiFunctions"
+// import { bookRoom, getRoomById } from "../utils/ApiFunctions"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "../auth/AuthProvider"
 
@@ -11,7 +11,7 @@ const BookingForm = () => {
 	const [validated, setValidated] = useState(false)
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [errorMessage, setErrorMessage] = useState("")
-	const [roomPrice, setRoomPrice] = useState(0)
+	const [roomPrice, setRoomPrice] = useState(100) // mock giá trị cứng
 
 const currentUser = localStorage.getItem("userId")
 
@@ -33,14 +33,9 @@ const currentUser = localStorage.getItem("userId")
 		setErrorMessage("")
 	}
 
-
 	const getRoomPriceById = async (roomId) => {
-		try {
-			const response = await getRoomById(roomId)
-			setRoomPrice(response.roomPrice)
-		} catch (error) {
-			throw new Error(error)
-		}
+		// mock giá trị cứng
+		setRoomPrice(100)
 	}
 
 	useEffect(() => {
@@ -84,15 +79,9 @@ const currentUser = localStorage.getItem("userId")
 	}
 
 	const handleFormSubmit = async () => {
-		try {
-			const confirmationCode = await bookRoom(roomId, booking)
-			setIsSubmitted(true)
-			navigate("/booking-success", { state: { message: confirmationCode } })
-		} catch (error) {
-			const errorMessage = error.message
-			console.log(errorMessage)
-			navigate("/booking-success", { state: { error: errorMessage } })
-		}
+		// mock: chỉ chuyển trang thành công
+		setIsSubmitted(true)
+		navigate("/booking-success", { state: { message: "MOCK_CONFIRMATION_CODE" } })
 	}
 
 	return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { getRoomById, updateRoom } from "../utils/ApiFunctions"
+// import { getRoomById, updateRoom } from "../utils/ApiFunctions"
 import { Link, useParams } from "react-router-dom"
 const EditRoom = () => {
     const [room, setRoom] = useState({
@@ -25,17 +25,23 @@ const EditRoom = () => {
 	}
 
     useEffect(() => {
-		const fetchRoom = async () => {
-			try {
-				const roomData = await getRoomById(roomId)
-				setRoom(roomData)
-				setImagePreview(roomData.photo)
-			} catch (error) {
-				console.error(error)
-			}
-		}
+		// const fetchRoom = async () => {
+		// 	try {
+		// 		const roomData = await getRoomById(roomId)
+		// 		setRoom(roomData)
+		// 		setImagePreview(roomData.photo)
+		// 	} catch (error) {
+		// 		console.error(error)
+		// 	}
+		// }
 
-		fetchRoom()
+		// fetchRoom()
+		// Mock dữ liệu phòng
+		setRoom({
+			photo: "",
+			roomType: "VIP",
+			roomPrice: "100"
+		})
 	}, [roomId])
 
 
@@ -43,16 +49,16 @@ const EditRoom = () => {
 		e.preventDefault()
 
 		try {
-			const response = await updateRoom(roomId, room)
-			if (response.status === 200) {
-				setSuccessMessage("Room updated successfully!")
-				const updatedRoomData = await getRoomById(roomId)
-				setRoom(updatedRoomData)
-				setImagePreview(updatedRoomData.photo)
-				setErrorMessage("")
-			} else {
-				setErrorMessage("Error updating room")
-			}
+			// const response = await updateRoom(roomId, room)
+			// if (response.status === 200) {
+			setSuccessMessage("Room updated successfully!")
+			// const updatedRoomData = await getRoomById(roomId)
+			// setRoom(updatedRoomData)
+			// setImagePreview(updatedRoomData.photo)
+			setErrorMessage("")
+			// } else {
+			// 	setErrorMessage("Error updating room")
+			// }
 		} catch (error) {
 			console.error(error)
 			setErrorMessage(error.message)

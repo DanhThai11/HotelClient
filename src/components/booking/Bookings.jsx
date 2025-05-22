@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { cancelBooking, getAllBookings } from "../utils/ApiFunctions"
+import { getAllBookings, deleteBooking } from "../../services/BookingService"
 import Header from "../common/Header"
 import BookingsTable from "./BookingsTable"
 
@@ -24,7 +24,7 @@ const Bookings = () => {
 
 	const handleBookingCancellation = async (bookingId) => {
 		try {
-			await cancelBooking(bookingId)
+			await deleteBooking(bookingId)
 			const data = await getAllBookings()
 			setBookingInfo(data)
 		} catch (error) {

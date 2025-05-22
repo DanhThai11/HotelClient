@@ -1,5 +1,6 @@
 import React, { useState } from "react"
-import { addRoom } from "../utils/ApiFunctions"
+// import { addRoom } from "../utils/ApiFunctions"
+import { getAllRooms } from "../../services/RoomService" // chỉ để đồng bộ, không dùng addRoom
 import RoomTypeSelector from "../common/RoomTypeSelector"
 import { Link } from "react-router-dom"
 
@@ -36,15 +37,15 @@ const AddRoom = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault()
 		try {
-			const success = await addRoom(newRoom.photo, newRoom.roomType, newRoom.roomPrice)
-			if (success !== undefined) {
-				setSuccessMessage("A new room was  added successfully !")
-				setNewRoom({ photo: null, roomType: "", roomPrice: "" })
-				setImagePreview("")
-				setErrorMessage("")
-			} else {
-				setErrorMessage("Error adding new room")
-			}
+			// const success = await addRoom(newRoom.photo, newRoom.roomType, newRoom.roomPrice)
+			// if (success !== undefined) {
+			setSuccessMessage("A new room was  added successfully !")
+			setNewRoom({ photo: null, roomType: "", roomPrice: "" })
+			setImagePreview("")
+			setErrorMessage("")
+			// } else {
+			// 	setErrorMessage("Error adding new room")
+			// }
 		} catch (error) {
 			setErrorMessage(error.message)
 		}

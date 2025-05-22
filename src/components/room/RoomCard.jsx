@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { getRoomImageUrl } from "../utils/ApiFunctions";
 
 const RoomCard = ({ room }) => {
   return (
@@ -10,16 +11,17 @@ const RoomCard = ({ room }) => {
           <Link to={`/book-room/${room.id}`}>
             <Card.Img
               variant="top"
-              src={`data:image/png;base64, ${room.photo}`}
+              src={getRoomImageUrl(room.imagePath)}
               alt="Room Photo"
+              style={{ height: "200px", objectFit: "cover" }}
             />
           </Link>
         </div>
         <Card.Body className="room-details">
-          <Card.Title className="room-type">{room.roomType}</Card.Title>
-          <Card.Text className="room-price">{room.roomPrice} / night</Card.Text>
+          <Card.Title className="room-type">{room.type}</Card.Title>
+          <Card.Text className="room-price">${room.price} / night</Card.Text>
           <Card.Text className="room-description">
-            Some room information goes here for the guest to read through
+            {room.description}
           </Card.Text>
           <Link to={`/book-room/${room.id}`} className="btn btn-primary btn-block">
             Book Now

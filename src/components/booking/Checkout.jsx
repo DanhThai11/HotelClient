@@ -11,33 +11,33 @@ import {
 } from "react-icons/fa"
 
 import { useParams } from "react-router-dom"
-import { getRoomById } from "../utils/ApiFunctions"
+// import { getRoomById } from "../utils/ApiFunctions"
 import RoomCarousel from "../common/RoomCarousel"
 
 const Checkout = () => {
 	const [error, setError] = useState(null)
-	const [isLoading, setIsLoading] = useState(true)
+	const [isLoading, setIsLoading] = useState(false)
 	const [roomInfo, setRoomInfo] = useState({
 		photo: "",
-		roomType: "",
-		roomPrice: ""
+		roomType: "VIP",
+		roomPrice: 100
 	})
 
 	const { roomId } = useParams()
 
-	useEffect(() => {
-		setTimeout(() => {
-			getRoomById(roomId)
-				.then((response) => {
-					setRoomInfo(response)
-					setIsLoading(false)
-				})
-				.catch((error) => {
-					setError(error)
-					setIsLoading(false)
-				})
-		}, 1000)
-	}, [roomId])
+	// useEffect(() => {
+	// 	setTimeout(() => {
+	// 		getRoomById(roomId)
+	// 			.then((response) => {
+	// 				setRoomInfo(response)
+	// 				setIsLoading(false)
+	// 			})
+	// 			.catch((error) => {
+	// 				setError(error)
+	// 				setIsLoading(false)
+	// 			})
+	// 	}, 1000)
+	// }, [roomId])
 
 	return (
 		<div>
@@ -51,7 +51,7 @@ const Checkout = () => {
 						) : (
 							<div className="room-info">
 								<img
-									src={`data:image/png;base64,${roomInfo.photo}`}
+									src={roomInfo.photo}
 									alt="Room photo"
 									style={{ width: "100%", height: "200px" }}
 								/>
