@@ -1,137 +1,157 @@
-import React, { useState } from "react"
-import moment from "moment"
-// import { cancelBooking, getBookingByConfirmationCode } from "../utils/ApiFunctions"
-import { getAllBookings, deleteBooking } from "../../services/BookingService"
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getAllBookings,
+  deleteBooking,
+  getBookingByConfirmationCode,
+} from "../../components/utils/ApiFunctions";
+import { FaSearch, FaTrash } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const FindBooking = () => {
-	const [confirmationCode, setConfirmationCode] = useState("")
-	const [error, setError] = useState(null)
-	const [successMessage, setSuccessMessage] = useState("")
-	const [isLoading, setIsLoading] = useState(false)
-	const [bookingInfo, setBookingInfo] = useState({
-		id: "",
-		bookingConfirmationCode: "",
-		room: { id: "", roomType: "" },
-		roomNumber: "",
-		checkInDate: "",
-		checkOutDate: "",
-		guestName: "",
-		guestEmail: "",
-		numOfAdults: "",
-		numOfChildren: "",
-		totalNumOfGuests: ""
-	})
+  const [confirmationCode, setConfirmationCode] = useState("");
+  const [bookingInfo, setBookingInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-	const emptyBookingInfo = {
-		id: "",
-		bookingConfirmationCode: "",
-		room: { id: "", roomType: "" },
-		roomNumber: "",
-		checkInDate: "",
-		checkOutDate: "",
-		guestName: "",
-		guestEmail: "",
-		numOfAdults: "",
-		numOfChildren: "",
-		totalNumOfGuests: ""
-	}
-	const [isDeleted, setIsDeleted] = useState(false)
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setBookingInfo(null);
 
-	const handleInputChange = (event) => {
-		setConfirmationCode(event.target.value)
-	}
+    try {
+      const response = await getBookingByConfirmationCode(confirmationCode);
+      if (response.code === 0) {
+        setBookingInfo(response.result);
+      } else {
+        setError(response.message || "Không tìm thấy đặt phòng");
+      }
+    } catch (error) {
+      setError(error.message || "Có lỗi xảy ra khi tìm đặt phòng");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	// Mock getBookingByConfirmationCode
-	const getBookingByConfirmationCode = async (code) => {
-		const all = await getAllBookings();
-		const found = all.find(b => String(b.id) === code || b.bookingConfirmationCode === code);
-		if (!found) throw new Error("Không tìm thấy booking!");
-		return found;
-	}
+  const handleDelete = async (bookingId) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa đặt phòng này?")) {
+      try {
+        const response = await deleteBooking(bookingId);
+        if (response.code === 0) {
+          toast.success("Xóa đặt phòng thành công!");
+          setBookingInfo(null);
+          setConfirmationCode("");
+        } else {
+          toast.error(response.message || "Xóa đặt phòng thất bại");
+        }
+      } catch (error) {
+        toast.error(error.message || "Có lỗi xảy ra khi xóa đặt phòng");
+      }
+    }
+  };
 
-	const handleFormSubmit = async (event) => {
-		event.preventDefault()
-		setIsLoading(true)
+  const formatDate = (dateString) => {
+    const options = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+    return new Date(dateString).toLocaleString("vi-VN", options);
+  };
 
-		try {
-			const data = await getBookingByConfirmationCode(confirmationCode)
-			setBookingInfo(data)
-			setError(null)
-		} catch (error) {
-			setBookingInfo(emptyBookingInfo)
-			setError(error.message)
-		}
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Tìm đặt phòng</h1>
+      <form onSubmit={handleSearch} className="mb-8">
+        <div className="flex gap-4">
+          <input
+            type="text"
+            value={confirmationCode}
+            onChange={(e) => setConfirmationCode(e.target.value)}
+            placeholder="Nhập mã xác nhận"
+            className="flex-1 p-2 border rounded"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
+            disabled={loading}
+          >
+            <FaSearch />
+            {loading ? "Đang tìm..." : "Tìm kiếm"}
+          </button>
+        </div>
+      </form>
 
-		setTimeout(() => setIsLoading(false), 2000)
-	}
+      {error && (
+        <div className="text-red-500 mb-4">
+          <p>{error}</p>
+        </div>
+      )}
 
-	const handleBookingCancellation = async (bookingId) => {
-		try {
-			await deleteBooking(bookingInfo.id)
-			setIsDeleted(true)
-			setSuccessMessage("Booking has been cancelled successfully!")
-			setBookingInfo(emptyBookingInfo)
-			setConfirmationCode("")
-			setError(null)
-		} catch (error) {
-			setError(error.message)
-		}
-		setTimeout(() => {
-			setSuccessMessage("")
-			setIsDeleted(false)
-		}, 2000)
-	}
+      {bookingInfo && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-semibold">Thông tin đặt phòng</h2>
+            <button
+              onClick={() => handleDelete(bookingInfo.id)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <FaTrash />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-semibold">Mã xác nhận:</p>
+              <p>{bookingInfo.id}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Người đặt:</p>
+              <p>{bookingInfo.user.username}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Số phòng:</p>
+              <p>{bookingInfo.roomNumber}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Loại phòng:</p>
+              <p>{bookingInfo.roomType}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Ngày nhận phòng:</p>
+              <p>{formatDate(bookingInfo.checkInDate)}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Ngày trả phòng:</p>
+              <p>{formatDate(bookingInfo.checkOutDate)}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Số khách:</p>
+              <p>{bookingInfo.numberOfGuests}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Tổng tiền:</p>
+              <p>{bookingInfo.totalAmount.toLocaleString("vi-VN")} VNĐ</p>
+            </div>
+            <div>
+              <p className="font-semibold">Trạng thái:</p>
+              <p>{bookingInfo.status}</p>
+            </div>
+            {bookingInfo.specialRequests && (
+              <div>
+                <p className="font-semibold">Yêu cầu đặc biệt:</p>
+                <p>{bookingInfo.specialRequests}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-	return (
-		<>
-			<div className="container mt-5 d-flex flex-column justify-content-center align-items-center">
-				<h2 className="text-center mb-4">Find My Booking</h2>
-				<form onSubmit={handleFormSubmit} className="col-md-6">
-					<div className="input-group mb-3">
-						<input
-							className="form-control"
-							type="text"
-							id="confirmationCode"
-							name="confirmationCode"
-							value={confirmationCode}
-							onChange={handleInputChange}
-							placeholder="Enter the booking confirmation code"
-						/>
-
-						<button type="submit" className="btn btn-hotel input-group-text">
-							Find booking
-						</button>
-					</div>
-				</form>
-
-				{isLoading ? (
-					<div>Finding your booking...</div>
-				) : error ? (
-					<div className="text-danger">Error: {error}</div>
-				) : bookingInfo.id ? (
-					<div className="col-md-6 mt-4 mb-5">
-						<h3>Booking Information</h3>
-						<p className="text-success">Booking ID: {bookingInfo.id}</p>
-						<p>Room ID: {bookingInfo.roomId || bookingInfo.room?.id}</p>
-						<p>Check-in Date: {bookingInfo.checkInDate}</p>
-						<p>Check-out Date: {bookingInfo.checkOutDate}</p>
-						<p>Status: {bookingInfo.status}</p>
-						{!isDeleted && (
-							<button
-								onClick={() => handleBookingCancellation(bookingInfo.id)}
-								className="btn btn-danger">
-								Cancel Booking
-							</button>
-						)}
-					</div>
-				) : (
-					<div>find booking...</div>
-				)}
-
-				{isDeleted && <div className="alert alert-success mt-3 fade show">{successMessage}</div>}
-			</div>
-		</>
-	)
-}
-
-export default FindBooking
+export default FindBooking;

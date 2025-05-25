@@ -15,9 +15,11 @@ const RoomSearch = () => {
 	const [errorMessage, setErrorMessage] = useState("")
 	const [availableRooms, setAvailableRooms] = useState([])
 	const [isLoading, setIsLoading] = useState(false)
+	const [hasSearched, setHasSearched] = useState(false)
 
 	const handleSearch = (e) => {
 		e.preventDefault()
+		setHasSearched(true)
 		const checkInMoment = moment(searchQuery.checkInDate)
 		const checkOutMoment = moment(searchQuery.checkOutDate)
 		if (!checkInMoment.isValid() || !checkOutMoment.isValid()) {
@@ -29,13 +31,28 @@ const RoomSearch = () => {
 			return
 		}
 		setIsLoading(true)
-		getAvailableRooms(searchQuery.checkInDate, searchQuery.checkOutDate, searchQuery.roomType)
+		// Chỉ gửi roomType nếu có giá trị
+		const params = {
+			checkInDate: searchQuery.checkInDate,
+			checkOutDate: searchQuery.checkOutDate
+		}
+		if (searchQuery.roomType) {
+			params.roomType = searchQuery.roomType
+		}
+		
+		getAvailableRooms(params.checkInDate, params.checkOutDate, params.roomType)
 			.then((response) => {
-				setAvailableRooms(response.data)
-				setTimeout(() => setIsLoading(false), 2000)
+				if (response.code === 0 && response.result) {
+					setAvailableRooms(response.result)
+				} else {
+					setErrorMessage(response.message || "Không thể lấy danh sách phòng trống")
+					setAvailableRooms([])
+				}
 			})
 			.catch((error) => {
-				console.log(error)
+				console.error("Lỗi khi tìm phòng:", error)
+				setErrorMessage(error.message || "Đã xảy ra lỗi khi tìm phòng")
+				setAvailableRooms([])
 			})
 			.finally(() => {
 				setIsLoading(false)
@@ -51,6 +68,7 @@ const RoomSearch = () => {
 			setErrorMessage("")
 		}
 	}
+
 	const handleClearSearch = () => {
 		setSearchQuery({
 			checkInDate: "",
@@ -58,12 +76,13 @@ const RoomSearch = () => {
 			roomType: ""
 		})
 		setAvailableRooms([])
+		setHasSearched(false)
 	}
 
 	return (
 		<>
 			<Container className="shadow mt-n5 mb-5 py-5">
-				<Form onSubmit={handleSearch}>
+				<Form onSubmit={handleSearch} noValidate>
 					<Row className="justify-content-center">
 						<Col xs={12} md={3}>
 							<Form.Group controlId="checkInDate">
@@ -74,6 +93,7 @@ const RoomSearch = () => {
 									value={searchQuery.checkInDate}
 									onChange={handleInputChange}
 									min={moment().format("YYYY-MM-DD")}
+									required
 								/>
 							</Form.Group>
 						</Col>
@@ -86,12 +106,13 @@ const RoomSearch = () => {
 									value={searchQuery.checkOutDate}
 									onChange={handleInputChange}
 									min={moment().format("YYYY-MM-DD")}
+									required
 								/>
 							</Form.Group>
 						</Col>
 						<Col xs={12} md={3}>
 							<Form.Group controlId="roomType">
-								<Form.Label>Room Type</Form.Label>
+								<Form.Label>Room Type (Optional)</Form.Label>
 								<div className="d-flex">
 									<RoomTypeSelector
 										handleRoomInputChange={handleInputChange}
@@ -107,12 +128,12 @@ const RoomSearch = () => {
 				</Form>
 
 				{isLoading ? (
-					<p className="mt-4">Finding availble rooms....</p>
-				) : availableRooms ? (
+					<p className="mt-4">Finding available rooms....</p>
+				) : hasSearched && availableRooms && availableRooms.length > 0 ? (
 					<RoomSearchResults results={availableRooms} onClearSearch={handleClearSearch} />
-				) : (
+				) : hasSearched ? (
 					<p className="mt-4">No rooms available for the selected dates and room type.</p>
-				)}
+				) : null}
 				{errorMessage && <p className="text-danger">{errorMessage}</p>}
 			</Container>
 		</>

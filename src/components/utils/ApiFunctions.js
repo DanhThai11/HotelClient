@@ -10,8 +10,41 @@ export const getHeader = () => {
   const token = localStorage.getItem("token");
   return {
     Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   };
 };
+
+export async function changePassword(oldPassword, newPassword) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.post(
+      "/auth/changePass",
+      {
+        oldPassword,
+        newPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || "Đổi mật khẩu thất bại");
+    }
+  } catch (error) {
+    console.error("Lỗi khi đổi mật khẩu:", error);
+    throw error;
+  }
+}
 
 // Setup interceptors — call only after login
 export const setupInterceptors = (handleLogout) => {
@@ -144,14 +177,16 @@ export async function getRoomTypes() {
     const response = await api.get("/api/rooms/types", {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
 
     if (response.status === 200 && response.data.code === 0) {
       return response.data.result;
     } else {
-      throw new Error(response.data?.message || "Không thể lấy danh sách loại phòng");
+      throw new Error(
+        response.data?.message || "Không thể lấy danh sách loại phòng"
+      );
     }
   } catch (error) {
     console.error("Lỗi khi lấy danh sách loại phòng:", error);
@@ -169,14 +204,16 @@ export async function getAllRooms() {
     const response = await api.get("/api/rooms", {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
 
     if (response.status === 200 && response.data.code === 0) {
       return response.data.result;
     } else {
-      throw new Error(response.data?.message || "Không thể lấy danh sách phòng");
+      throw new Error(
+        response.data?.message || "Không thể lấy danh sách phòng"
+      );
     }
   } catch (error) {
     console.error("Lỗi khi lấy danh sách phòng:", error);
@@ -185,8 +222,30 @@ export async function getAllRooms() {
 }
 
 export async function getRoomById(roomId) {
-  const response = await api.get(`/rooms/room/${roomId}`);
-  return response.data;
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.get(`/api/rooms/${roomId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(
+        response.data?.message || "Không thể lấy thông tin phòng"
+      );
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin phòng:", error);
+    throw error;
+  }
 }
 
 export async function addRoom(photo, roomType, roomPrice) {
@@ -199,12 +258,28 @@ export async function addRoom(photo, roomType, roomPrice) {
 }
 
 export async function updateRoom(roomId, roomData) {
-  const formData = new FormData();
-  formData.append("roomType", roomData.roomType);
-  formData.append("roomPrice", roomData.roomPrice);
-  formData.append("photo", roomData.photo);
-  const response = await api.put(`/rooms/update/${roomId}`, formData);
-  return response.data;
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.put(`/api/rooms/${roomId}`, roomData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || "Không thể cập nhật phòng");
+    }
+  } catch (error) {
+    console.error("Lỗi khi cập nhật phòng:", error);
+    throw error;
+  }
 }
 
 export async function deleteRoom(roomId) {
@@ -213,94 +288,177 @@ export async function deleteRoom(roomId) {
 }
 
 export async function getAvailableRooms(checkInDate, checkOutDate, roomType) {
-  const response = await api.get(
-    `/rooms/available-rooms?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}&roomType=${roomType}`
-  );
-  return response.data;
-}
-
-// Booking APIs
-export async function bookRoom(roomId, bookingData) {
-  const response = await api.post(
-    `/bookings/room/${roomId}/booking`,
-    bookingData
-  );
-  return response.data;
-}
-
-export async function getAllBookings() {
-  const response = await api.get("/bookings/all-bookings");
-  return response.data;
-}
-
-export async function getBookingByConfirmationCode(confirmationCode) {
-  const response = await api.get(`/bookings/confirmation/${confirmationCode}`);
-  return response.data;
-}
-
-export async function cancelBooking(bookingId) {
-  const response = await api.delete(`/bookings/booking/${bookingId}/delete`);
-  return response.data;
-}
-
-export async function getMyBookings(token) {
-  const response = await api.get("/api/bookings/user/my", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-}
-
-// Change Password
-export async function changePassword(oldPassword, newPassword) {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("Không tìm thấy token đăng nhập");
     }
 
-    const response = await api.post(
-      "/auth/changePass",
-      {
-        oldPassword,
-        newPassword,
+    const response = await api.get(`/api/rooms/available`, {
+      params: {
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        roomType: roomType,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-    if (response.status === 200) {
+    if (response.status === 200 && response.data.code === 0) {
       return response.data;
     } else {
-      throw new Error(response.data?.message || "Đổi mật khẩu thất bại");
+      throw new Error(
+        response.data?.message || "Không thể lấy danh sách phòng trống"
+      );
     }
   } catch (error) {
-    console.error("Lỗi khi đổi mật khẩu:", error);
+    console.error("Lỗi khi lấy danh sách phòng trống:", error);
     throw error;
   }
 }
 
-// Hàm helper để xử lý đường dẫn ảnh
-export function getRoomImageUrl(imagePath) {
-  if (!imagePath) {
-    return "https://via.placeholder.com/300x200?text=No+Image"; // Ảnh placeholder khi không có ảnh
+// Booking APIs
+// Booking APIs
+export async function bookRoom(roomId, bookingData) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập.");
+    }
+
+    const requestData = {
+      roomId: parseInt(roomId),
+      checkInDate: bookingData.checkInDate,
+      checkOutDate: bookingData.checkOutDate,
+      numberOfGuests: bookingData.numberOfGuests || 2,
+      totalAmount: bookingData.totalAmount,
+      specialRequests: bookingData.specialRequests,
+    };
+
+    const response = await api.post("/api/bookings", requestData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (error.response?.data?.message) {
+      // ✅ Server trả về mã lỗi cùng message (ví dụ: 400 + message custom)
+      throw new Error(error.response.data.message);
+    } else if (error.request) {
+      // ✅ Request gửi đi nhưng không nhận được phản hồi từ server
+      throw new Error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+    } else {
+      // ✅ Các lỗi khác (ví dụ cấu hình request bị sai)
+      throw new Error("Đã xảy ra lỗi trong quá trình gửi yêu cầu.");
+    }
   }
-  
-  // Nếu đường dẫn đã là URL đầy đủ
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+}
+
+export async function getAllBookings() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.get("/api/bookings", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(
+        response.data?.message || "Không thể lấy danh sách đặt phòng"
+      );
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách đặt phòng:", error);
+    throw error;
   }
-  
-  // Nếu đường dẫn bắt đầu bằng /uploads/rooms/
-  if (imagePath.startsWith('/uploads/rooms/')) {
-    return `${api.defaults.baseURL}${imagePath}`;
+}
+
+export async function deleteBooking(bookingId) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.put(`/api/bookings/${bookingId}/cancel`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || "Không thể xóa đặt phòng");
+    }
+  } catch (error) {
+    console.error("Lỗi khi xóa đặt phòng:", error);
+    throw error;
   }
-  
-  // Trường hợp khác, thêm /uploads/rooms/ vào trước
-  return `${api.defaults.baseURL}/uploads/rooms/${imagePath}`;
+}
+
+export async function getBookingByConfirmationCode(confirmationCode) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.get(`/api/bookings/code/${confirmationCode}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || "Không thể tìm thấy đặt phòng");
+    }
+  } catch (error) {
+    console.error("Lỗi khi tìm đặt phòng:", error);
+    throw error;
+  }
+}
+
+export async function getMyBookings() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.get("/api/bookings/user/my", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(
+        response.data?.message || "Không thể lấy danh sách đặt phòng của bạn"
+      );
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách đặt phòng:", error);
+    throw error;
+  }
 }

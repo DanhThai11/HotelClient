@@ -1,147 +1,339 @@
-import React, { useEffect, useState } from "react"
-// import { getRoomById, updateRoom } from "../utils/ApiFunctions"
-import { Link, useParams } from "react-router-dom"
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  Grid,
+  MenuItem,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { getRoomById, updateRoom } from "../../components/utils/ApiFunctions";
+
 const EditRoom = () => {
-    const [room, setRoom] = useState({
-		photo: "",
-		roomType: "",
-		roomPrice: ""
-	})
+  const { roomId } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [room, setRoom] = useState({
+    roomNumber: "",
+    description: "",
+    price: "",
+    type: "",
+    capacity: "",
+    status: "",
+  });
+  const [originalRoom, setOriginalRoom] = useState(null);
 
-	const [imagePreview, setImagePreview] = useState("")
-	const [successMessage, setSuccessMessage] = useState("")
-	const [errorMessage, setErrorMessage] = useState("")
-	const { roomId } = useParams()
+  useEffect(() => {
+    const fetchRoom = async () => {
+      try {
+        setLoading(true);
+        const response = await getRoomById(roomId);
+        if (response.code === 0 && response.result) {
+          const roomData = response.result;
+          const roomState = {
+            roomNumber: roomData.roomNumber || "",
+            description: roomData.description || "",
+            price: roomData.price || "",
+            type: roomData.type || "",
+            capacity: roomData.capacity || "",
+            status: roomData.status || "",
+          };
+          setRoom(roomState);
+          setOriginalRoom(roomState);
 
-    const handleImageChange = (e) => {
-		const selectedImage = e.target.files[0]
-		setRoom({ ...room, photo: selectedImage })
-		setImagePreview(URL.createObjectURL(selectedImage))
-	}
+          // Xử lý hiển thị ảnh
+          if (roomData.photo) {
+            if (roomData.photo.startsWith("data:image")) {
+              setImagePreview(roomData.photo);
+            } else if (roomData.photo.startsWith("http")) {
+              setImagePreview(roomData.photo);
+            } else {
+              setImagePreview(`data:image/png;base64,${roomData.photo}`);
+            }
+          }
+        }
+      } catch (error) {
+        setErrorMessage(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const handleInputChange = (event) => {
-		const { name, value } = event.target
-		setRoom({ ...room, [name]: value })
-	}
+    if (roomId) {
+      fetchRoom();
+    }
+  }, [roomId]);
 
-    useEffect(() => {
-		// const fetchRoom = async () => {
-		// 	try {
-		// 		const roomData = await getRoomById(roomId)
-		// 		setRoom(roomData)
-		// 		setImagePreview(roomData.photo)
-		// 	} catch (error) {
-		// 		console.error(error)
-		// 	}
-		// }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "price") {
+      // Chỉ cho phép nhập số và dấu chấm
+      const numericValue = value.replace(/[^0-9.]/g, "");
+      setRoom({ ...room, [name]: numericValue });
+    } else {
+      setRoom({ ...room, [name]: value });
+    }
+  };
 
-		// fetchRoom()
-		// Mock dữ liệu phòng
-		setRoom({
-			photo: "",
-			roomType: "VIP",
-			roomPrice: "100"
-		})
-	}, [roomId])
+  const handleImageChange = (e) => {
+    const selectedImage = e.target.files[0];
+    if (selectedImage) {
+      if (selectedImage.size > 5000000) {
+        setErrorMessage("Kích thước ảnh không được vượt quá 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(selectedImage);
+    }
+  };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
 
-    const handleSubmit = async (e) => {
-		e.preventDefault()
+    try {
+      const formData = new FormData();
 
-		try {
-			// const response = await updateRoom(roomId, room)
-			// if (response.status === 200) {
-			setSuccessMessage("Room updated successfully!")
-			// const updatedRoomData = await getRoomById(roomId)
-			// setRoom(updatedRoomData)
-			// setImagePreview(updatedRoomData.photo)
-			setErrorMessage("")
-			// } else {
-			// 	setErrorMessage("Error updating room")
-			// }
-		} catch (error) {
-			console.error(error)
-			setErrorMessage(error.message)
-		}
-	}
+      // So sánh với dữ liệu gốc và chỉ gửi những trường có thay đổi
+      if (room.roomNumber !== originalRoom.roomNumber) {
+        formData.append("roomNumber", room.roomNumber);
+      } else {
+        formData.append("roomNumber", originalRoom.roomNumber);
+      }
 
-    return (
-		<div className="container mt-5 mb-5">
-			<h3 className="text-center mb-5 mt-5">Edit Room</h3>
-			<div className="row justify-content-center">
-				<div className="col-md-8 col-lg-6">
-					{successMessage && (
-						<div className="alert alert-success" role="alert">
-							{successMessage}
-						</div>
-					)}
-					{errorMessage && (
-						<div className="alert alert-danger" role="alert">
-							{errorMessage}
-						</div>
-					)}
-					<form onSubmit={handleSubmit}>
-						<div className="mb-3">
-							<label htmlFor="roomType" className="form-label hotel-color">
-								Room Type
-							</label>
-							<input
-								type="text"
-								className="form-control"
-								id="roomType"
-								name="roomType"
-								value={room.roomType}
-								onChange={handleInputChange}
-							/>
-						</div>
-						<div className="mb-3">
-							<label htmlFor="roomPrice" className="form-label hotel-color">
-								Room Price
-							</label>
-							<input
-								type="number"
-								className="form-control"
-								id="roomPrice"
-								name="roomPrice"
-								value={room.roomPrice}
-								onChange={handleInputChange}
-							/>
-						</div>
+      if (room.description !== originalRoom.description) {
+        formData.append("description", room.description);
+      } else {
+        formData.append("description", originalRoom.description);
+      }
 
-						<div className="mb-3">
-							<label htmlFor="photo" className="form-label hotel-color">
-								Photo
-							</label>
-							<input
-								required
-								type="file"
-								className="form-control"
-								id="photo"
-								name="photo"
-								onChange={handleImageChange}
-							/>
-							{imagePreview && (
-								<img
-									src={`data:image/jpeg;base64,${imagePreview}`}
-									alt="Room preview"
-									style={{ maxWidth: "400px", maxHeight: "400" }}
-									className="mt-3"
-								/>
-							)}
-						</div>
-						<div className="d-grid gap-2 d-md-flex mt-2">
-							<Link to={"/existing-rooms"} className="btn btn-outline-info ml-5">
-								back
-							</Link>
-							<button type="submit" className="btn btn-outline-warning">
-								Edit Room
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-	)
-}
+      if (room.price !== originalRoom.price) {
+        formData.append("price", room.price);
+      } else {
+        formData.append("price", originalRoom.price);
+      }
 
-export default EditRoom
+      if (room.type !== originalRoom.type) {
+        formData.append("type", room.type);
+      } else {
+        formData.append("type", originalRoom.type);
+      }
+
+      if (room.capacity !== originalRoom.capacity) {
+        formData.append("capacity", room.capacity);
+      } else {
+        formData.append("capacity", originalRoom.capacity);
+      }
+
+      if (room.status !== originalRoom.status) {
+        formData.append("status", room.status);
+      } else {
+        formData.append("status", originalRoom.status);
+      }
+
+      // Xử lý ảnh
+      if (imagePreview) {
+        // Nếu ảnh là base64 hoặc data URL (ảnh mới được chọn)
+        if (imagePreview.startsWith("data:image")) {
+          const imageBlob = await fetch(imagePreview).then((r) => r.blob());
+          // Kiểm tra kích thước ảnh
+          if (imageBlob.size > 5000000) {
+            // 5MB
+            setErrorMessage("Kích thước ảnh không được vượt quá 5MB");
+            setLoading(false);
+            return;
+          }
+          formData.append("photo", imageBlob, "room-image.jpg");
+        }
+        // Nếu ảnh là URL (ảnh cũ)
+        else if (imagePreview.startsWith("http")) {
+          formData.append("photo", imagePreview);
+        }
+        // Nếu ảnh là base64 string (ảnh cũ)
+        else {
+          formData.append("photo", imagePreview);
+        }
+      }
+
+      const response = await updateRoom(roomId, formData);
+      if (response.code === 0) {
+        setSuccessMessage("Cập nhật phòng thành công!");
+        setTimeout(() => {
+          navigate("/admin/existing-rooms");
+        }, 2000);
+      } else {
+        setErrorMessage(response.message || "Cập nhật phòng thất bại");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Có lỗi xảy ra khi cập nhật phòng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Container component="main" maxWidth="md">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography component="h1" variant="h5" gutterBottom>
+          Chỉnh sửa thông tin phòng
+        </Typography>
+
+        {errorMessage && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errorMessage}
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {successMessage}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Số phòng"
+                name="roomNumber"
+                value={room.roomNumber}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Mô tả"
+                name="description"
+                value={room.description}
+                onChange={handleInputChange}
+                margin="normal"
+                multiline
+                rows={4}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Giá phòng"
+                name="price"
+                value={room.price}
+                onChange={handleInputChange}
+                margin="normal"
+                type="text"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                label="Loại phòng"
+                name="type"
+                value={room.type}
+                onChange={handleInputChange}
+                margin="normal"
+              >
+                <MenuItem value="SINGLE">Phòng đơn</MenuItem>
+                <MenuItem value="DOUBLE">Phòng đôi</MenuItem>
+                <MenuItem value="SUITE">Phòng suite</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Sức chứa"
+                name="capacity"
+                value={room.capacity}
+                onChange={handleInputChange}
+                margin="normal"
+                type="number"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                label="Trạng thái"
+                name="status"
+                value={room.status}
+                onChange={handleInputChange}
+                margin="normal"
+              >
+                <MenuItem value="AVAILABLE">Có sẵn</MenuItem>
+                <MenuItem value="BOOKED">Đã đặt</MenuItem>
+                <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12}>
+              <input
+                accept="image/*"
+                type="file"
+                id="image-upload"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+              <label htmlFor="image-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  sx={{ mt: 2, mb: 2 }}
+                >
+                  Chọn ảnh phòng
+                </Button>
+              </label>
+              {imagePreview && (
+                <Box
+                  component="img"
+                  src={imagePreview}
+                  alt="Room preview"
+                  sx={{
+                    width: "100%",
+                    height: 200,
+                    objectFit: "cover",
+                    mt: 2,
+                  }}
+                />
+              )}
+            </Grid>
+
+            <Grid item xs={12}>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                disabled={loading}
+                sx={{ mt: 2 }}
+              >
+                {loading ? <CircularProgress size={24} /> : "Cập nhật phòng"}
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+    </Container>
+  );
+};
+
+export default EditRoom;

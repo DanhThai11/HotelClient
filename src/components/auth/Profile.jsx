@@ -188,7 +188,7 @@ const Profile = () => {
                             .subtract(1, "month")
                             .format("MMM Do, YYYY")}
                         </td>
-                        <td className="text-success">Đang sử dụng</td>
+                        <td className="text-success">{booking.status}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -201,14 +201,11 @@ const Profile = () => {
                 <Button
                   variant="primary"
                   className="btn-hotel"
-                  onClick={() => navigate('/change-password')}
+                  onClick={() => navigate("/change-password")}
                 >
                   Đổi Mật Khẩu
                 </Button>
-                <Button
-                  variant="danger"
-                  onClick={handleDeleteAccount}
-                >
+                <Button variant="danger" onClick={handleDeleteAccount}>
                   Xóa Tài Khoản
                 </Button>
               </div>

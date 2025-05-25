@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { logoutUser, getAllBookings } from "../utils/ApiFunctions";
 import {
   Box,
   Drawer,
@@ -38,9 +40,9 @@ import {
   MonetizationOn as MonetizationOnIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router-dom";
-import { getAllRooms } from "../../services/RoomService";
-import { logoutUser } from "../utils/ApiFunctions";
+import { FaUsers, FaHotel, FaBookmark } from "react-icons/fa";
+import { toast } from "react-toastify";
+
 import {
   LineChart,
   Line,
@@ -91,13 +93,15 @@ const Admin = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [openConcept, setOpenConcept] = useState(false);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const roomsData = await getAllRooms();
         setRooms(roomsData);
-        setBookings(mockBookings);
+        await fetchBookings();
       } catch (error) {
         setRooms([]);
         setBookings([]);
@@ -105,6 +109,22 @@ const Admin = () => {
     };
     fetchData();
   }, []);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllBookings();
+      if (response.code === 0) {
+        setBookings(response.result);
+      } else {
+        setError(response.message);
+      }
+    } catch (error) {
+      setError(error.message || "Có lỗi xảy ra khi tải danh sách đặt phòng");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -224,6 +244,34 @@ const Admin = () => {
     </Box>
   );
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500 mt-4">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Tính toán các thống kê
+  const totalBookings = bookings.length;
+  const confirmedBookings = bookings.filter(
+    (booking) => booking.status === "CONFIRMED"
+  ).length;
+  const pendingBookings = bookings.filter(
+    (booking) => booking.status === "PENDING"
+  ).length;
+  const cancelledBookings = bookings.filter(
+    (booking) => booking.status === "CANCELLED"
+  ).length;
+
   return (
     <Box sx={{ display: "flex", background: "#f5f6fa", minHeight: "100vh" }}>
       {/* Sidebar */}
@@ -318,7 +366,7 @@ const Admin = () => {
                     variant="h5"
                     sx={{ fontWeight: "bold", color: "#2e7d32" }}
                   >
-                    {bookings.length}
+                    {totalBookings}
                   </Typography>
                 </CardContent>
               </Card>
