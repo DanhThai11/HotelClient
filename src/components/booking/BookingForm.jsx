@@ -11,6 +11,7 @@ const BookingForm = () => {
   const [validated, setValidated] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [roomPrice, setRoomPrice] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -32,6 +33,7 @@ const BookingForm = () => {
     const { name, value } = e.target;
     setBooking({ ...booking, [name]: value });
     setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const getRoomPriceById = async (roomId) => {
@@ -88,16 +90,19 @@ const BookingForm = () => {
 
     if (!checkIn.isValid() || !checkOut.isValid()) {
       setErrorMessage("Ngày không hợp lệ");
+      setSuccessMessage("");
       return false;
     }
 
     if (checkOut.isSameOrBefore(checkIn)) {
       setErrorMessage("Ngày check-out phải sau ngày check-in");
+      setSuccessMessage("");
       return false;
     }
 
-    setErrorMessage("");
-    return true;
+      setErrorMessage("");
+      setSuccessMessage("");
+      return true;
   };
 
   const handleSubmit = (e) => {
@@ -110,6 +115,7 @@ const BookingForm = () => {
       return;
     }
 
+    // Form hợp lệ, hiển thị BookingSummary
     setValidated(true);
     setIsSubmitted(true);
   };
@@ -118,6 +124,7 @@ const BookingForm = () => {
     try {
       setIsProcessing(true);
       setErrorMessage("");
+      setSuccessMessage("");
 
       const bookingData = {
         ...booking,
@@ -125,19 +132,29 @@ const BookingForm = () => {
         checkOutDate: moment(booking.checkOutDate).format("YYYY-MM-DDTHH:mm:ss")
       };
 
+      // Gọi API đặt phòng
       const response = await bookRoom(roomId, bookingData);
       
-      if (response.code === 0) {
-        // Đặt phòng thành công
-        navigate("/booking-success", { state: { message: response.result } });
+      if (response.data?.code === 0) {
+        // Đặt phòng thành công, chỉ điều hướng và truyền state
+        const successState = { message: response.data?.message, roomId: response.data?.result?.id };
+        console.log("Navigating with state:", successState);
+        
+        // Thực hiện điều hướng và thoát hàm
+        navigate("/booking-success", { state: successState });
+        return; // Thêm return để dừng thực thi further code
+
       } else {
-        // Server trả về lỗi
-        setErrorMessage(response.message || "Không thể đặt phòng");
+        // Server trả về lỗi (phòng đã đặt, vv.)
+        setErrorMessage(response.data?.message || "Không thể đặt phòng.");
+        setSuccessMessage("");
         setIsSubmitted(false);
         setValidated(false);
       }
     } catch (error) {
-      setErrorMessage(error.message);
+      // Xử lý lỗi network hoặc lỗi khác
+      setErrorMessage(error.message || "Đã xảy ra lỗi khi đặt phòng.");
+      setSuccessMessage("");
       setIsSubmitted(false);
       setValidated(false);
     } finally {
@@ -152,6 +169,7 @@ const BookingForm = () => {
           <div className="col-md-6">
             <div className="card card-body mt-5">
               <h4 className="card-title">Reserve Room</h4>
+
               {errorMessage && (
                 <div className="alert alert-danger" role="alert">
                   <i className="fas fa-exclamation-circle me-2"></i>
@@ -159,6 +177,8 @@ const BookingForm = () => {
                 </div>
               )}
 
+              {/* Hiển thị form hoặc BookingSummary */}
+              {/* Hiển thị form */}
               <Form noValidate validated={validated} onSubmit={handleSubmit}>
                 <Form.Group>
                   <Form.Label htmlFor="guestFullName" className="hotel-color">
@@ -241,63 +261,62 @@ const BookingForm = () => {
                       <Form.Control.Feedback type="invalid">
                         Please select a check out date.
                       </Form.Control.Feedback>
+                      </div>
+                      {/* errorMessage ở đây đã được hiển thị ở trên */}
+                      {/* {errorMessage && ( ... )} */}
                     </div>
-                    {errorMessage && (
-                      <p className="error-message text-danger">
-                        {errorMessage}
-                      </p>
-                    )}
-                  </div>
-                </fieldset>
+                  </fieldset>
 
-                <fieldset style={{ border: "2px" }}>
-                  <legend>Special Requests</legend>
-                  <div className="row">
-                    <div className="col-12">
-                      <Form.Label
-                        htmlFor="specialRequests"
-                        className="hotel-color"
-                      >
-                        Ghi chú
-                      </Form.Label>
-                      <FormControl
-                        as="textarea"
-                        rows={3}
-                        id="specialRequests"
-                        name="specialRequests"
-                        value={booking.specialRequests}
-                        onChange={handleInputChange}
-                        placeholder="Nhập yêu cầu đặc biệt của bạn (nếu có)"
-                      />
+                  <fieldset style={{ border: "2px" }}>
+                    <legend>Special Requests</legend>
+                    <div className="row">
+                      <div className="col-12">
+                        <Form.Label
+                          htmlFor="specialRequests"
+                          className="hotel-color"
+                        >
+                          Ghi chú
+                        </Form.Label>
+                        <FormControl
+                          as="textarea"
+                          rows={3}
+                          id="specialRequests"
+                          name="specialRequests"
+                          value={booking.specialRequests}
+                          onChange={handleInputChange}
+                          placeholder="Nhập yêu cầu đặc biệt của bạn (nếu có)"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </fieldset>
+                  </fieldset>
 
-                <div className="fom-group mt-2 mb-2">
-                  <button
-                    type="submit"
-                    className="btn btn-hotel"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        ></span>
-                        Đang xử lý...
-                      </>
-                    ) : (
-                      "Tiếp tục"
-                    )}
-                  </button>
-                </div>
-              </Form>
+                  <div className="fom-group mt-2 mb-2">
+                    <button
+                      type="submit"
+                      className="btn btn-hotel"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          ></span>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        "Tiếp tục"
+                      )}
+                    </button>
+                  </div>
+                </Form>
             </div>
           </div>
 
+          {/* Cột bên phải chứa BookingSummary */}
           <div className="col-md-4">
+            {/* Hiển thị BookingSummary nếu đã submitted và không có lỗi */}
             {isSubmitted && !errorMessage && (
               <BookingSummary
                 booking={booking}
@@ -313,4 +332,5 @@ const BookingForm = () => {
     </>
   );
 };
+
 export default BookingForm;

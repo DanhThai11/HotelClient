@@ -196,13 +196,13 @@ const Admin = () => {
       <List>
         {menuItems.map((item) => (
           <ListItem
-            button
             key={item.text}
             component={Link}
             to={item.path}
             sx={{
               borderRadius: 2,
               mb: 1,
+              cursor: 'pointer',
               "&.Mui-selected, &:hover": {
                 background: "#f5f7fa",
                 color: "#1976d2",

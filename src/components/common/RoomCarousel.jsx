@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { getAllRooms } from "../utils/ApiFunctions";
 import { Link } from "react-router-dom";
 import { Card, Carousel, Col, Container, Row } from "react-bootstrap";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
 
 const RoomCarousel = () => {
   const [rooms, setRooms] = useState([
@@ -27,14 +29,27 @@ const RoomCarousel = () => {
     return <div className="mt-5">Loading rooms....</div>;
   }
   if (errorMessage) {
-    return <div className=" text-danger mb-5 mt-5">Error : {errorMessage}</div>;
+    return <div className="text-danger mb-5 mt-5">Error : {errorMessage}</div>;
   }
 
   return (
     <section className="bg-light mb-5 mt-5 shadow">
-      <Link to={"/browse-all-rooms"} className="hote-color text-center">
-        Browse all rooms
-      </Link>
+      <Container className="d-flex justify-content-start mt-3 mb-4">
+        <Button
+          variant="contained"
+          component={Link}
+          to="/browse-all-rooms"
+          sx={{
+            backgroundColor: '#1976d2',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#1565c0'
+            }
+          }}
+        >
+          Browse all Rooms
+        </Button>
+      </Container>
 
       <Container>
         <Carousel indicators={false}>

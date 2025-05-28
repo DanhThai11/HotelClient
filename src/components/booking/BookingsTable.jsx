@@ -7,34 +7,34 @@ import { vi } from "date-fns/locale";
 const BookingsTable = ({ bookingInfo, handleBookingCancellation }) => {
   const [filteredBookings, setFilteredBookings] = useState([]);
 
-  const filterBookings = (startDate, endDate) => {
+    const filterBookings = (startDate, endDate) => {
     if (!bookingInfo?.result || !Array.isArray(bookingInfo.result)) {
       console.error("Invalid booking data:", bookingInfo);
       return;
     }
 
     let filtered = bookingInfo.result;
-    if (startDate && endDate) {
+        if (startDate && endDate) {
       filtered = bookingInfo.result.filter((booking) => {
-        const bookingStartDate = parseISO(booking.checkInDate);
-        const bookingEndDate = parseISO(booking.checkOutDate);
-        return (
-          bookingStartDate >= startDate &&
-          bookingEndDate <= endDate &&
-          bookingEndDate > startDate
-        );
-      });
-    }
+                const bookingStartDate = parseISO(booking.checkInDate);
+                const bookingEndDate = parseISO(booking.checkOutDate);
+                return (
+                    bookingStartDate >= startDate &&
+                    bookingEndDate <= endDate &&
+                    bookingEndDate > startDate
+                );
+            });
+        }
     // Sắp xếp: CANCELLED xuống dưới, các trạng thái khác giữ nguyên thứ tự
     filtered.sort((a, b) => {
       if (a.status === "CANCELLED" && b.status !== "CANCELLED") return 1;
       if (a.status !== "CANCELLED" && b.status === "CANCELLED") return -1;
       return 0;
     });
-    setFilteredBookings(filtered);
-  };
+        setFilteredBookings(filtered);
+    };
 
-  useEffect(() => {
+    useEffect(() => {
     if (bookingInfo?.result && Array.isArray(bookingInfo.result)) {
       // Sắp xếp khi khởi tạo dữ liệu
       const sortedBookings = [...bookingInfo.result].sort((a, b) => {
@@ -47,7 +47,7 @@ const BookingsTable = ({ bookingInfo, handleBookingCancellation }) => {
       console.error("Invalid booking data:", bookingInfo);
       setFilteredBookings([]);
     }
-  }, [bookingInfo]);
+    }, [bookingInfo]);
 
   const formatDate = (dateString) => {
     try {
@@ -67,16 +67,16 @@ const BookingsTable = ({ bookingInfo, handleBookingCancellation }) => {
     );
   }
 
-  return (
-    <section className="bookings-table-container">
+    return (
+        <section className="bookings-table-container">
       <DateSlider
         onDateChange={filterBookings}
         onFilterChange={filterBookings}
       />
-      <div className="table-responsive">
-        <table className="table table-striped table-bordered">
-          <thead>
-            <tr>
+            <div className="table-responsive">
+                <table className="table table-striped table-bordered">
+                    <thead>
+                        <tr>
               <th>STT</th>
               <th>Số phòng</th>
               <th>UserId</th>
@@ -89,12 +89,12 @@ const BookingsTable = ({ bookingInfo, handleBookingCancellation }) => {
               <th>Trạng thái</th>
               <th>Ghi chú</th>
               <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBookings.map((booking, index) => (
-              <tr key={booking.id}>
-                <td>{index + 1}</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredBookings.map((booking, index) => (
+                            <tr key={booking.id}>
+                                <td>{index + 1}</td>
                 <td>{booking.roomNumber || "N/A"}</td>
                 <td>{booking.user?.id || "N/A"}</td>
                 <td>{booking.user?.username || "N/A"}</td>
@@ -121,28 +121,28 @@ const BookingsTable = ({ bookingInfo, handleBookingCancellation }) => {
                   </span>
                 </td>
                 <td>{booking.specialRequests || "Không có"}</td>
-                <td>
+                                <td>
                   {booking.status === "PENDING" && (
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleBookingCancellation(booking.id)}
-                    >
+                                    <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => handleBookingCancellation(booking.id)}
+                                    >
                       Hủy
-                    </button>
+                                    </button>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredBookings.length === 0 && (
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {filteredBookings.length === 0 && (
           <p className="no-booking-message">
             Không tìm thấy đặt phòng nào trong khoảng thời gian đã chọn
           </p>
-        )}
-      </div>
-    </section>
-  );
+                )}
+            </div>
+        </section>
+    );
 };
 
 export default BookingsTable;

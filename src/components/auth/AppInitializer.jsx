@@ -2,16 +2,15 @@
 import { useEffect } from "react";
 import { useAuth } from "./AuthProvider";
 import { setupInterceptors } from "../utils/ApiFunctions";
-import { api } from "../utils/ApiFunctions";
 
 const AppInitializer = () => {
-  const { handleLogin, handleLogout, isInitialized } = useAuth();
+  const { handleLogout, isInitialized } = useAuth();
 
   useEffect(() => {
     if (isInitialized) {
-      setupInterceptors(api, handleLogin, handleLogout);
+      setupInterceptors(handleLogout);
     }
-  }, [isInitialized, handleLogin, handleLogout]);
+  }, [isInitialized, handleLogout]);
 
   return null; // Không hiển thị gì lên giao diện
 };

@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { getAllRooms, deleteRoom } from "../utils/ApiFunctions";
-import { toast } from "react-toastify";
+import React, { useEffect, useState } from "react";
+import { getAllRooms, deleteRoom, api } from "../utils/ApiFunctions";
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  IconButton,
-  Chip,
-  CircularProgress,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
+  Alert,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Stack,
+  Pagination,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { FaEdit, FaEye, FaPlus, FaTrashAlt, FaSearch } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const ExistingRooms = () => {
   const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [roomsPerPage] = useState(8);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filteredRooms, setFilteredRooms] = useState([]);
+  const [search, setSearch] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
@@ -38,149 +41,225 @@ const ExistingRooms = () => {
 
   const fetchRooms = async () => {
     try {
-      setLoading(true);
-      setError("");
-      const response = await getAllRooms();
-      if (response.code === 0) {
-        setRooms(response.result);
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Không tìm thấy token đăng nhập");
+      }
+
+      // Gọi API trực tiếp với token
+      const response = await api.get("/api/rooms", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("API Response:", response);
+
+      if (response.status === 200 && response.data.code === 0) {
+        setRooms(response.data.result);
+        setFilteredRooms(response.data.result);
       } else {
-        throw new Error(response.message || "Không thể tải danh sách phòng");
+        throw new Error(response.data.message || "Không thể tải danh sách phòng");
       }
     } catch (error) {
-      setError(error.message || "Không thể tải danh sách phòng");
+      console.error("Error fetching rooms:", error);
+      if (error.response) {
+        console.error("Response error:", error.response.data);
+        console.error("Status:", error.response.status);
+      }
+      setErrorMessage(error.message || "Không thể tải danh sách phòng");
       setRooms([]);
       toast.error(error.message || "Không thể tải danh sách phòng");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteClick = (room) => {
-    setSelectedRoom(room);
-    setDeleteDialogOpen(true);
-  };
+  useEffect(() => {
+    if (!search) {
+      setFilteredRooms(rooms);
+    } else {
+      setFilteredRooms(
+        rooms.filter(
+          (room) =>
+            room.type?.toLowerCase().includes(search.toLowerCase()) ||
+            String(room.id).includes(search) ||
+            String(room.price).includes(search)
+        )
+      );
+    }
+    setCurrentPage(1);
+  }, [rooms, search]);
 
-  const handleDeleteConfirm = async () => {
+  const handleDelete = async (roomId) => {
     try {
-      setLoading(true);
-      const response = await deleteRoom(selectedRoom.id);
-      if (response.code === 0) {
-        toast.success("Xóa phòng thành công");
-        fetchRooms(); // Refresh danh sách
-      } else {
-        throw new Error(response.message || "Không thể xóa phòng");
-      }
+      await deleteRoom(roomId);
+      setSuccessMessage(`Đã xóa phòng số ${roomId}`);
+      fetchRooms();
     } catch (error) {
-      toast.error(error.message || "Không thể xóa phòng");
-    } finally {
-      setLoading(false);
-      setDeleteDialogOpen(false);
-      setSelectedRoom(null);
+      setErrorMessage(error.message);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setSelectedRoom(null);
-  };
+  // Pagination
+  const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+  const indexOfLastRoom = currentPage * roomsPerPage;
+  const indexOfFirstRoom = indexOfLastRoom - roomsPerPage;
+  const currentRooms = filteredRooms.slice(indexOfFirstRoom, indexOfLastRoom);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Card>
-        <CardContent>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-            <Typography variant="h5" component="h2">
-              Quản lý phòng
-            </Typography>
-            <Link to="/add-room" className="btn btn-hotel">
-              Thêm phòng mới
-            </Link>
-          </Box>
-
-          {error && (
-            <Box sx={{ mb: 2 }}>
-              <Typography color="error">{error}</Typography>
-            </Box>
-          )}
-
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Loại phòng</TableCell>
-                    <TableCell>Mô tả</TableCell>
-                    <TableCell>Giá</TableCell>
-                    <TableCell>Sức chứa</TableCell>
-                    <TableCell>Trạng thái</TableCell>
-                    <TableCell>Thao tác</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rooms.map((room) => (
-                    <TableRow key={room.id}>
-                      <TableCell>{room.id}</TableCell>
-                      <TableCell>{room.type}</TableCell>
-                      <TableCell>{room.description}</TableCell>
-                      <TableCell>
-                        {room.price.toLocaleString("vi-VN")} VNĐ
-                      </TableCell>
-                      <TableCell>{room.capacity}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={room.status}
-                          color={
-                            room.status === "AVAILABLE" ? "success" : "warning"
-                          }
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
+    <Box>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h5" fontWeight={700}>
+          Danh sách phòng
+        </Typography>
+        <Button
+          component={Link}
+          to="/admin/add-room"
+          variant="contained"
+          startIcon={<FaPlus />}
+          sx={{ borderRadius: 2 }}
+        >
+          Thêm phòng
+        </Button>
+      </Stack>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        mb={2}
+        alignItems="center"
+      >
+        <TextField
+          variant="outlined"
+          size="small"
+          placeholder="Tìm kiếm theo loại phòng, ID, giá..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <FaSearch />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: 250 }}
+        />
+      </Stack>
+      {successMessage && (
+        <Snackbar
+          open
+          autoHideDuration={3000}
+          onClose={() => setSuccessMessage("")}
+        >
+          <Alert severity="success" sx={{ width: "100%" }}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
+      )}
+      {errorMessage && (
+        <Snackbar
+          open
+          autoHideDuration={3000}
+          onClose={() => setErrorMessage("")}
+        >
+          <Alert severity="error" sx={{ width: "100%" }}>
+            {errorMessage}
+          </Alert>
+        </Snackbar>
+      )}
+      <Paper
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: 3,
+          boxShadow: 2,
+        }}
+      >
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell align="center">ID</TableCell>
+                <TableCell align="center">Loại phòng</TableCell>
+                <TableCell align="center">Giá phòng</TableCell>
+                <TableCell align="center">Trạng thái</TableCell>
+                <TableCell align="center">Hành động</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    Đang tải dữ liệu...
+                  </TableCell>
+                </TableRow>
+              ) : currentRooms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    Không có phòng nào
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentRooms.map((room) => (
+                  <TableRow key={room.id} hover>
+                    <TableCell align="center">{room.id}</TableCell>
+                    <TableCell align="center">{room.type}</TableCell>
+                    <TableCell align="center">${room.price}</TableCell>
+                    <TableCell align="center">{room.status}</TableCell>
+                    <TableCell align="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
                         <IconButton
-                          size="small"
-                          color="primary"
                           component={Link}
-                          to={`/edit-room/${room.id}`}
+                          to={`/admin/edit-room/${room.id}`}
+                          color="info"
+                          size="small"
                         >
-                          <EditIcon />
+                          <FaEye />
                         </IconButton>
                         <IconButton
+                          component={Link}
+                          to={`/admin/edit-room/${room.id}`}
+                          color="warning"
                           size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(room)}
                         >
-                          <DeleteIcon />
+                          <FaEdit />
                         </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Dialog xác nhận xóa */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>Xác nhận xóa</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Bạn có chắc chắn muốn xóa phòng {selectedRoom?.id} - {selectedRoom?.type}?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Hủy</Button>
-          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-            Xóa
-          </Button>
-        </DialogActions>
-      </Dialog>
+                        <IconButton
+                          color="error"
+                          size="small"
+                          onClick={() => handleDelete(room.id)}
+                        >
+                          <FaTrashAlt />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Stack alignItems="center" my={2}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, value) => setCurrentPage(value)}
+            color="primary"
+            shape="rounded"
+          />
+        </Stack>
+      </Paper>
     </Box>
   );
 };

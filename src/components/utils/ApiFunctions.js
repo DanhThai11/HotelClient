@@ -3,7 +3,48 @@ import axios from "axios";
 // Create axios instance
 export const api = axios.create({
   baseURL: "http://localhost:8080",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
+
+// Setup interceptors
+export const setupInterceptors = (handleLogout) => {
+  api.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      console.log("Request config:", config);
+      return config;
+    },
+    (error) => {
+      console.error("Request error:", error);
+      return Promise.reject(error);
+    }
+  );
+
+  api.interceptors.response.use(
+    (response) => {
+      console.log("Response:", response);
+      return response;
+    },
+    async (error) => {
+      console.error("Response error:", error);
+      if (error.response) {
+        console.error("Error data:", error.response.data);
+        console.error("Error status:", error.response.status);
+
+        // Xử lý lỗi 401 (Unauthorized)
+        if (error.response.status === 401) {
+          handleLogout();
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+};
 
 // Get Authorization Header
 export const getHeader = () => {
@@ -45,44 +86,6 @@ export async function changePassword(oldPassword, newPassword) {
     throw error;
   }
 }
-
-// Setup interceptors — call only after login
-export const setupInterceptors = (handleLogout) => {
-  api.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-
-  api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
-      if (
-        error.response?.status === 401 &&
-        !originalRequest._retry &&
-        localStorage.getItem("authToken")
-      ) {
-        originalRequest._retry = true;
-        try {
-          const newToken = await refreshToken();
-          localStorage.setItem("authToken", newToken);
-          originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          handleLogout();
-          return Promise.reject(refreshError);
-        }
-      }
-      return Promise.reject(error);
-    }
-  );
-};
 
 // Refresh token
 export const refreshToken = async () => {
@@ -196,17 +199,7 @@ export async function getRoomTypes() {
 
 export async function getAllRooms() {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Không tìm thấy token đăng nhập");
-    }
-
-    const response = await api.get("/api/rooms", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await api.get("/api/rooms");
 
     if (response.status === 200 && response.data.code === 0) {
       return response.data.result;
@@ -248,13 +241,56 @@ export async function getRoomById(roomId) {
   }
 }
 
-export async function addRoom(photo, roomType, roomPrice) {
-  const formData = new FormData();
-  formData.append("photo", photo);
-  formData.append("roomType", roomType);
-  formData.append("roomPrice", roomPrice);
-  const response = await api.post("/rooms/add/new-room", formData);
-  return response.status === 201;
+export async function addRoom(roomData) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    // Tạo object dữ liệu phòng
+    const roomRequest = {
+      roomNumber: roomData.roomNumber,
+      description: roomData.description,
+      price: roomData.price, // Giá đã được format ở component
+      type: roomData.type,
+      capacity: parseInt(roomData.capacity),
+      status: roomData.status
+    };
+
+    // Nếu có ảnh, tạo FormData
+    if (roomData.photo) {
+      const formData = new FormData();
+      formData.append("photo", roomData.photo);
+      // Thêm từng trường dữ liệu vào FormData
+      Object.keys(roomRequest).forEach(key => {
+        formData.append(key, roomRequest[key]);
+      });
+
+      const response = await api.post("/api/rooms", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response;
+    } else {
+      // Nếu không có ảnh, gửi JSON object
+      const response = await api.post("/api/rooms", roomRequest, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      return response;
+    }
+  } catch (error) {
+    console.error("Lỗi khi thêm phòng:", error);
+    if (error.response) {
+      console.error("Response error:", error.response.data);
+      console.error("Status:", error.response.status);
+    }
+    throw error;
+  }
 }
 
 export async function updateRoom(roomId, roomData) {
@@ -289,21 +325,12 @@ export async function deleteRoom(roomId) {
 
 export async function getAvailableRooms(checkInDate, checkOutDate, roomType) {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Không tìm thấy token đăng nhập");
-    }
-
     const response = await api.get(`/api/rooms/available`, {
       params: {
         checkIn: checkInDate,
         checkOut: checkOutDate,
         roomType: roomType,
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      }
     });
 
     if (response.status === 200 && response.data.code === 0) {
@@ -344,7 +371,7 @@ export async function bookRoom(roomId, bookingData) {
       },
     });
 
-    return response.data;
+    return response;
   } catch (error) {
     if (error.response?.data?.message) {
       // ✅ Server trả về mã lỗi cùng message (ví dụ: 400 + message custom)
@@ -366,12 +393,16 @@ export async function getAllBookings() {
       throw new Error("Không tìm thấy token đăng nhập");
     }
 
+    console.log("Gọi API getAllBookings với token:", token);
+
     const response = await api.get("/api/bookings", {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
+
+    console.log("Response từ API getAllBookings:", response);
 
     if (response.status === 200 && response.data.code === 0) {
       return response.data;
@@ -382,6 +413,10 @@ export async function getAllBookings() {
     }
   } catch (error) {
     console.error("Lỗi khi lấy danh sách đặt phòng:", error);
+    if (error.response) {
+      console.error("Response error:", error.response.data);
+      console.error("Status:", error.response.status);
+    }
     throw error;
   }
 }

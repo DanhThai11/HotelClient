@@ -78,7 +78,6 @@ const AdminLayout = ({ children }) => {
       icon: <BookOnlineIcon />,
       path: "/admin/existing-bookings",
     },
-    { text: "Quản lý người dùng", icon: <PeopleIcon />, path: "/admin/users" },
     { text: "Cài đặt", icon: <SettingsIcon />, path: "/admin/settings" },
   ];
 
@@ -108,7 +107,6 @@ const AdminLayout = ({ children }) => {
       <List>
         {menuItems.map((item) => (
           <ListItem
-            button
             key={item.text}
             component={Link}
             to={item.path}
@@ -116,6 +114,7 @@ const AdminLayout = ({ children }) => {
             sx={{
               borderRadius: 2,
               mb: 1,
+              cursor: "pointer",
               "&.Mui-selected, &:hover": {
                 background: "#f5f7fa",
                 color: "#1976d2",
@@ -127,9 +126,11 @@ const AdminLayout = ({ children }) => {
           </ListItem>
         ))}
         <ListItem
-          button
           onClick={() => setOpenConcept(!openConcept)}
-          sx={{ borderRadius: 2 }}
+          sx={{
+            borderRadius: 2,
+            cursor: "pointer",
+          }}
         >
           <ListItemIcon>
             <BarChartIcon />
@@ -139,13 +140,13 @@ const AdminLayout = ({ children }) => {
         </ListItem>
         <Collapse in={openConcept} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            <ListItem button sx={{ pl: 4, borderRadius: 2 }}>
+            <ListItem sx={{ pl: 4, borderRadius: 2, cursor: "pointer" }}>
               <ListItemIcon>
                 <MonetizationOnIcon />
               </ListItemIcon>
               <ListItemText primary="Doanh thu" />
             </ListItem>
-            <ListItem button sx={{ pl: 4, borderRadius: 2 }}>
+            <ListItem sx={{ pl: 4, borderRadius: 2, cursor: "pointer" }}>
               <ListItemIcon>
                 <StarIcon />
               </ListItemIcon>
