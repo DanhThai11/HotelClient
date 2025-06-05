@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Container, Form, Button, Alert, Row, Col } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Container,
-  Grid,
-  MenuItem,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
 import { getRoomById, updateRoom } from "../../components/utils/ApiFunctions";
 
 const EditRoom = () => {
@@ -48,7 +38,6 @@ const EditRoom = () => {
           setRoom(roomState);
           setOriginalRoom(roomState);
 
-          // Xử lý hiển thị ảnh
           if (roomData.photo) {
             if (roomData.photo.startsWith("data:image")) {
               setImagePreview(roomData.photo);
@@ -73,9 +62,8 @@ const EditRoom = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === "price") {
-      // Chỉ cho phép nhập số và dấu chấm
-      const numericValue = value.replace(/[^0-9.]/g, "");
+    if (name === "price" || name === "capacity") {
+      const numericValue = value.replace(/[^0-9]/g, "");
       setRoom({ ...room, [name]: numericValue });
     } else {
       setRoom({ ...room, [name]: value });
@@ -106,7 +94,6 @@ const EditRoom = () => {
     try {
       const formData = new FormData();
 
-      // So sánh với dữ liệu gốc và chỉ gửi những trường có thay đổi
       if (room.roomNumber !== originalRoom.roomNumber) {
         formData.append("roomNumber", room.roomNumber);
       } else {
@@ -143,26 +130,18 @@ const EditRoom = () => {
         formData.append("status", originalRoom.status);
       }
 
-      // Xử lý ảnh
       if (imagePreview) {
-        // Nếu ảnh là base64 hoặc data URL (ảnh mới được chọn)
         if (imagePreview.startsWith("data:image")) {
           const imageBlob = await fetch(imagePreview).then((r) => r.blob());
-          // Kiểm tra kích thước ảnh
           if (imageBlob.size > 5000000) {
-            // 5MB
             setErrorMessage("Kích thước ảnh không được vượt quá 5MB");
             setLoading(false);
             return;
           }
           formData.append("photo", imageBlob, "room-image.jpg");
-        }
-        // Nếu ảnh là URL (ảnh cũ)
-        else if (imagePreview.startsWith("http")) {
+        } else if (imagePreview.startsWith("http")) {
           formData.append("photo", imagePreview);
-        }
-        // Nếu ảnh là base64 string (ảnh cũ)
-        else {
+        } else {
           formData.append("photo", imagePreview);
         }
       }
@@ -184,154 +163,119 @@ const EditRoom = () => {
   };
 
   return (
-    <Container component="main" maxWidth="md">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography component="h1" variant="h5" gutterBottom>
-          Chỉnh sửa thông tin phòng
-        </Typography>
-
-        {errorMessage && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {errorMessage}
-          </Alert>
-        )}
-
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Số phòng"
+    <Container className="py-5">
+      <h2 className="text-center text-primary fw-bold mb-4">Edit Room</h2>
+      <Row className="justify-content-center">
+        <Col md={8}>
+          {successMessage && (
+            <Alert variant="success" className="text-center">
+              {successMessage}
+            </Alert>
+          )}
+          {errorMessage && (
+            <Alert variant="danger" className="text-center">
+              {errorMessage}
+            </Alert>
+          )}
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Số phòng</Form.Label>
+              <Form.Control
+                type="text"
                 name="roomNumber"
+                placeholder="Nhập số phòng"
                 value={room.roomNumber}
                 onChange={handleInputChange}
-                margin="normal"
+                required
               />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Mô tả"
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Mô tả</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
                 name="description"
+                placeholder="Nhập mô tả phòng"
                 value={room.description}
                 onChange={handleInputChange}
-                margin="normal"
-                multiline
-                rows={4}
+                required
               />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Giá phòng"
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Giá phòng (mỗi đêm)</Form.Label>
+              <Form.Control
+                type="text"
                 name="price"
+                placeholder="Nhập giá phòng"
                 value={room.price}
                 onChange={handleInputChange}
-                margin="normal"
-                type="text"
+                required
               />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Loại phòng"
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Loại phòng</Form.Label>
+              <Form.Control
+                type="text"
                 name="type"
+                placeholder="Nhập loại phòng"
                 value={room.type}
                 onChange={handleInputChange}
-                margin="normal"
-              >
-                <MenuItem value="SINGLE">Phòng đơn</MenuItem>
-                <MenuItem value="DOUBLE">Phòng đôi</MenuItem>
-                <MenuItem value="SUITE">Phòng suite</MenuItem>
-              </TextField>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Sức chứa"
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Sức chứa</Form.Label>
+              <Form.Control
+                type="text"
                 name="capacity"
+                placeholder="Nhập sức chứa"
                 value={room.capacity}
                 onChange={handleInputChange}
-                margin="normal"
-                type="number"
+                required
               />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Trạng thái"
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Trạng thái</Form.Label>
+              <Form.Select
                 name="status"
                 value={room.status}
                 onChange={handleInputChange}
-                margin="normal"
+                required
               >
-                <MenuItem value="AVAILABLE">Có sẵn</MenuItem>
-                <MenuItem value="BOOKED">Đã đặt</MenuItem>
-                <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
-              </TextField>
-            </Grid>
-
-            <Grid item xs={12}>
-              <input
-                accept="image/*"
+                <option value="AVAILABLE">Có sẵn</option>
+                <option value="BOOKED">Đã đặt</option>
+                <option value="MAINTENANCE">Bảo trì</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Ảnh phòng</Form.Label>
+              <Form.Control
                 type="file"
-                id="image-upload"
+                accept="image/*"
                 onChange={handleImageChange}
-                style={{ display: "none" }}
               />
-              <label htmlFor="image-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  fullWidth
-                  sx={{ mt: 2, mb: 2 }}
-                >
-                  Chọn ảnh phòng
-                </Button>
-              </label>
               {imagePreview && (
-                <Box
-                  component="img"
-                  src={imagePreview}
-                  alt="Room preview"
-                  sx={{
-                    width: "100%",
-                    height: 200,
-                    objectFit: "cover",
-                    mt: 2,
-                  }}
-                />
+                <div className="mt-3 text-center">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="img-fluid rounded"
+                    style={{ maxHeight: "200px" }}
+                  />
+                </div>
               )}
-            </Grid>
-
-            <Grid item xs={12}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                disabled={loading}
-                sx={{ mt: 2 }}
-              >
-                {loading ? <CircularProgress size={24} /> : "Cập nhật phòng"}
-              </Button>
-            </Grid>
-          </Grid>
-        </Box>
-      </Box>
+            </Form.Group>
+            <Button
+              variant="primary"
+              type="submit"
+              className="w-100"
+              disabled={loading}
+            >
+              {loading ? "Đang cập nhật..." : "Cập nhật phòng"}
+            </Button>
+          </Form>
+        </Col>
+      </Row>
     </Container>
   );
 };

@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance
 export const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://hotelserver-k74o.onrender.com",
   headers: {
     "Content-Type": "application/json",
   },
@@ -248,40 +248,17 @@ export async function addRoom(roomData) {
       throw new Error("Không tìm thấy token đăng nhập");
     }
 
-    // Tạo object dữ liệu phòng
-    const roomRequest = {
-      roomNumber: roomData.roomNumber,
-      description: roomData.description,
-      price: roomData.price, // Giá đã được format ở component
-      type: roomData.type,
-      capacity: parseInt(roomData.capacity),
-      status: roomData.status
-    };
+    const response = await api.post("/api/rooms", roomData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    // Nếu có ảnh, tạo FormData
-    if (roomData.photo) {
-      const formData = new FormData();
-      formData.append("photo", roomData.photo);
-      // Thêm từng trường dữ liệu vào FormData
-      Object.keys(roomRequest).forEach(key => {
-        formData.append(key, roomRequest[key]);
-      });
-
-      const response = await api.post("/api/rooms", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response;
+    if (response.status === 201 && response.data.code === 0) {
+      return response.data;
     } else {
-      // Nếu không có ảnh, gửi JSON object
-      const response = await api.post("/api/rooms", roomRequest, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-      return response;
+      throw new Error(response.data?.message || "Không thể thêm phòng");
     }
   } catch (error) {
     console.error("Lỗi khi thêm phòng:", error);
@@ -330,7 +307,7 @@ export async function getAvailableRooms(checkInDate, checkOutDate, roomType) {
         checkIn: checkInDate,
         checkOut: checkOutDate,
         roomType: roomType,
-      }
+      },
     });
 
     if (response.status === 200 && response.data.code === 0) {

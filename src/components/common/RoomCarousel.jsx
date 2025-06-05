@@ -40,40 +40,73 @@ const RoomCarousel = () => {
           component={Link}
           to="/browse-all-rooms"
           sx={{
-            backgroundColor: '#1976d2',
-            color: 'white',
-            '&:hover': {
-              backgroundColor: '#1565c0'
-            }
+            backgroundColor: "#1976d2",
+            color: "white",
+            textTransform: "none",
+            fontWeight: "bold",
+            "&:hover": {
+              backgroundColor: "#1565c0",
+            },
           }}
         >
-          Browse all Rooms
+          Browse All Rooms
         </Button>
       </Container>
 
       <Container>
-        <Carousel indicators={false}>
+        <Carousel indicators={false} interval={3000}>
           {[...Array(Math.ceil(rooms.length / 4))].map((_, index) => (
             <Carousel.Item key={index}>
               <Row>
                 {rooms.slice(index * 4, index * 4 + 4).map((room) => (
                   <Col key={room.id} className="mb-4" xs={12} md={6} lg={3}>
-                    <Card>
-                      <Link to={`/book-room/${room.id}`}>
+                    <Card className="shadow-sm border-0">
+                      <Link
+                        to={`/book-room/${room.id}`}
+                        style={{ textDecoration: "none" }}
+                      >
                         <Card.Img
                           variant="top"
                           src={`data:image/png;base64, ${room.photo}`}
                           alt="Room Photo"
                           className="w-100"
-                          style={{ height: "200px" }}
+                          style={{
+                            height: "200px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
                         />
                       </Link>
                       <Card.Body>
-                        <Card.Title className="hotel-color">
+                        <Card.Title
+                          className="hotel-color"
+                          style={{
+                            fontSize: "1.1rem",
+                            fontWeight: "bold",
+                            color: "#333",
+                          }}
+                        >
+                          {room.roomNumber}
+                        </Card.Title>
+                        <Card.Title
+                          className="hotel-color"
+                          style={{
+                            fontSize: "1.1rem",
+                            fontWeight: "bold",
+                            color: "#333",
+                          }}
+                        >
                           {room.type}
                         </Card.Title>
-                        <Card.Title className="room-price">
-                          ${room.price}/night
+                        <Card.Title
+                          className="room-price"
+                          style={{
+                            fontSize: "1rem",
+                            fontWeight: "500",
+                            color: "#1976d2",
+                          }}
+                        >
+                          {room.price.toLocaleString("vi-VN")} VND/night
                         </Card.Title>
                         <div className="flex-shrink-0">
                           <Link

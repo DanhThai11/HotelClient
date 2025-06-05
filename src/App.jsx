@@ -20,6 +20,7 @@ import Registration from "./components/auth/Registration";
 import Profile from "./components/auth/Profile";
 import VerifyEmailNotice from "./components/auth/VerifyEmailNotice";
 import ChangePassword from "./components/auth/ChangePassword";
+import Error404 from "./components/error/Error404";
 
 import NavBar from "./components/layout/NavBar";
 import Footer from "./components/layout/Footer";
@@ -55,6 +56,7 @@ function AppContent() {
         <Route path="/admin/existing-bookings" element={<AdminLayout><Bookings /></AdminLayout>} />
         <Route path="/admin/add-room" element={<AdminLayout><AddRoom /></AdminLayout>} />
         <Route path="/admin/edit-room/:roomId" element={<AdminLayout><EditRoom /></AdminLayout>} />
+        <Route path="*" element={<Error404 />} />
       </Routes>
       {!isAdminRoute && <Footer />}
     </main>

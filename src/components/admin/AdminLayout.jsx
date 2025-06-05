@@ -97,7 +97,7 @@ const AdminLayout = ({ children }) => {
           mb: 3,
           cursor: "pointer",
         }}
-        onClick={() => navigate("/admin")}
+        onClick={() => navigate("/")}
       >
         <Avatar sx={{ bgcolor: "#1976d2", mr: 1 }}>R</Avatar>
         <Typography variant="h6" sx={{ fontWeight: "bold", color: "#222" }}>

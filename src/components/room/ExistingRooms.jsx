@@ -61,7 +61,9 @@ const ExistingRooms = () => {
         setRooms(response.data.result);
         setFilteredRooms(response.data.result);
       } else {
-        throw new Error(response.data.message || "Không thể tải danh sách phòng");
+        throw new Error(
+          response.data.message || "Không thể tải danh sách phòng"
+        );
       }
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -187,6 +189,7 @@ const ExistingRooms = () => {
             <TableHead>
               <TableRow>
                 <TableCell align="center">ID</TableCell>
+                <TableCell align="center">Số phòng</TableCell>
                 <TableCell align="center">Loại phòng</TableCell>
                 <TableCell align="center">Giá phòng</TableCell>
                 <TableCell align="center">Trạng thái</TableCell>
@@ -210,6 +213,7 @@ const ExistingRooms = () => {
                 currentRooms.map((room) => (
                   <TableRow key={room.id} hover>
                     <TableCell align="center">{room.id}</TableCell>
+                    <TableCell align="center">{room.roomNumber}</TableCell>
                     <TableCell align="center">{room.type}</TableCell>
                     <TableCell align="center">${room.price}</TableCell>
                     <TableCell align="center">{room.status}</TableCell>
