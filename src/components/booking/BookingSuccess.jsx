@@ -1,44 +1,50 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Header from "../common/Header";
 
 const BookingSuccess = () => {
   const location = useLocation();
-  const message = location.state?.message;
-  const error = location.state?.error;
-  const roomId = location.state?.roomId;
+  const params = new URLSearchParams(location.search);
+  const paymentStatus = params.get("paymentStatus");
+  const billId = params.get("billId");
+  const message = params.get("message"); // Có thể có message từ server
 
-  console.log("Location state:", location.state); // <--- Thêm dòng này
+  // Xác định trạng thái thành công dựa vào paymentStatus từ URL
+  const isSuccessful = paymentStatus === "success";
 
-  // Xác định trạng thái thành công dựa vào sự tồn tại của roomId
-  const isBookingSuccessful = !!roomId;
+  // console.log("URL Search Params:", location.search); // Debugging line
+  // console.log("Payment Status:", paymentStatus); // Debugging line
+  // console.log("Bill ID:", billId); // Debugging line
+  // console.log("Message from URL:", message); // Debugging line
 
   return (
     <div className="container">
-      <Header title="Kết quả đặt phòng" />
+      <Header title="Kết quả thanh toán" />
       <div className="mt-5">
-        {isBookingSuccessful ? (
+        {isSuccessful ? (
           <div>
-            <h3 className="text-success">Đặt phòng thành công!</h3>
-            {roomId ? (
-              <p className="text-success">{`Bạn đã đặt phòng thành công. Mã đặt phòng của bạn là: ${roomId}`}</p>
-            ) : (
-              // Fallback message nếu không có roomId nhưng vẫn coi là thành công (ít khả năng xảy ra)
-              <p className="text-success">
-                {message || "Đặt phòng thành công."}
-              </p>
+            <h3 className="text-success">Thanh toán thành công!</h3>
+            {billId && (
+              <p className="text-success">{`Mã hóa đơn của bạn là: ${billId}`}</p>
             )}
+            {message && (
+                 <p className="text-success">{message}</p>
+            )}
+             <p className="text-muted">Booking của bạn đã được xác nhận.</p>
           </div>
         ) : (
           <div>
-            <h3 className="text-danger">Đặt phòng thất bại!</h3>
-            {error ? (
-              <p className="text-danger">{error}</p>
+            <h3 className="text-danger">Thanh toán thất bại!</h3>
+            {message ? (
+              <p className="text-danger">{message}</p>
             ) : (
-              // Hiển thị message từ server hoặc message mặc định khi thất bại
+              // Hiển thị message mặc định khi thất bại
               <p className="text-danger">
-                {message || "Đã xảy ra lỗi khi đặt phòng."}
+                Đã xảy ra lỗi trong quá trình thanh toán.
               </p>
+            )}
+            {billId && (
+                <p className="text-muted">Mã hóa đơn liên quan: {billId}</p>
             )}
           </div>
         )}

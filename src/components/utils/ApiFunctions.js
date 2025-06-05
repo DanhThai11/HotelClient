@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance
 export const api = axios.create({
-  baseURL: "https://hotelserver-k74o.onrender.com",
+  baseURL: "http://localhost:8080",
   headers: {
     "Content-Type": "application/json",
   },
@@ -448,6 +448,39 @@ export async function getBookingByConfirmationCode(confirmationCode) {
   }
 }
 
+// ... existing code ...
+
+// VNPay Payment APIs
+export async function createVNPayPayment(billId, amount) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Không tìm thấy token đăng nhập");
+    }
+
+    const response = await api.get(`/api/payment/vnpay/create`, {
+      params: {
+        billId: billId,
+        amount: amount,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status === 200 && response.data.code === 0) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || "Không thể tạo URL thanh toán");
+    }
+  } catch (error) {
+    console.error("Lỗi khi tạo URL thanh toán:", error);
+    throw error;
+  }
+}
+
+// ... existing code ...
 export async function getMyBookings() {
   try {
     const token = localStorage.getItem("token");

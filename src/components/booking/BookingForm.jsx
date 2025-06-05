@@ -6,6 +6,7 @@ import BookingSummary from "./BookingSummary";
 import { bookRoom, getRoomById } from "../utils/ApiFunctions";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import VNPayPayment from "../payment/VNPayPayment";
 
 const BookingForm = () => {
   const [validated, setValidated] = useState(false);
@@ -14,6 +15,8 @@ const BookingForm = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [roomPrice, setRoomPrice] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [billInfo, setBillInfo] = useState(null);
 
   const currentUser = localStorage.getItem("userId");
 
@@ -136,29 +139,53 @@ const BookingForm = () => {
       const response = await bookRoom(roomId, bookingData);
       
       if (response.data?.code === 0) {
-        // Đặt phòng thành công, chỉ điều hướng và truyền state
-        const successState = { message: response.data?.message, roomId: response.data?.result?.id };
-        console.log("Navigating with state:", successState);
+        // Lấy billId và amount từ response của API đặt phòng
+        const billId = response.data?.result?.billId; // Lấy Bill ID từ trường billId trong response backend
+        const totalAmount = response.data?.result?.totalAmount; // Lấy totalAmount từ backend
         
-        // Thực hiện điều hướng và thoát hàm
-        navigate("/booking-success", { state: successState });
-        return; // Thêm return để dừng thực thi further code
+        // Kiểm tra xem có billId và amount hợp lệ không trước khi hiển thị thanh toán
+        if (billId && totalAmount !== undefined && totalAmount !== null) {
+           // Hiển thị nút thanh toán VNPay
+          setShowPayment(true);
+          setBillInfo({
+            billId: billId,
+            amount: totalAmount
+          });
+        } else {
+          // Xử lý trường hợp API đặt phòng thành công nhưng không trả về billId hoặc totalAmount
+          setErrorMessage("Đặt phòng thành công nhưng không thể khởi tạo thanh toán. Vui lòng liên hệ bộ phận hỗ trợ.");
+          setSuccessMessage(""); // Xóa thông báo thành công tạm thời
+          setIsSubmitted(false); // Quay lại form để có thể thử lại nếu cần
+          setValidated(false);
+        }
 
       } else {
-        // Server trả về lỗi (phòng đã đặt, vv.)
         setErrorMessage(response.data?.message || "Không thể đặt phòng.");
         setSuccessMessage("");
         setIsSubmitted(false);
         setValidated(false);
       }
     } catch (error) {
-      // Xử lý lỗi network hoặc lỗi khác
       setErrorMessage(error.message || "Đã xảy ra lỗi khi đặt phòng.");
       setSuccessMessage("");
       setIsSubmitted(false);
       setValidated(false);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handlePaymentComplete = (success) => {
+    if (success) {
+      navigate("/booking-success", { 
+        state: { 
+          message: "Đặt phòng và thanh toán thành công!", 
+          roomId: roomId 
+        } 
+      });
+    } else {
+      setErrorMessage("Thanh toán thất bại. Vui lòng thử lại.");
+      setShowPayment(false);
     }
   };
 
@@ -325,6 +352,18 @@ const BookingForm = () => {
                 isFormValid={validated}
                 isProcessing={isProcessing}
               />
+            )}
+            
+            {/* Hiển thị nút thanh toán VNPay sau khi đặt phòng thành công */}
+            {showPayment && billInfo && billInfo.billId && billInfo.amount && (
+              <div className="mt-4">
+                <h5>Thanh toán</h5>
+                <VNPayPayment 
+                  billId={billInfo.billId}
+                  amount={billInfo.amount}
+                  onPaymentComplete={handlePaymentComplete}
+                />
+              </div>
             )}
           </div>
         </div>
