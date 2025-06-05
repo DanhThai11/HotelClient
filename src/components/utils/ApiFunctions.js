@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance
 export const api = axios.create({
-  baseURL: "https://hotelserver-k74o.onrender.com",
+  baseURL: "https://hotelserver-1.onrender.com",
   headers: {
     "Content-Type": "application/json",
   },
